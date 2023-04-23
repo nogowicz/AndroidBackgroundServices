@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">AndroidTlo</string>
+    <string name="adres">Adres:</string>
+    <string name="wprowadz_adres">Wprowadź adres</string>
+    <string name="pobierz_informacje">Pobierz informacje</string>
+    <string name="rozmiar_pliku">Rozmiar pliku:</string>
+    <string name="_0">0</string>
+    <string name="typ_pliku">Typ pliku:</string>
+    <string name="pobierz_plik">Pobierz plik</string>
+    <string name="powiadomienie_tytul">Pobieranie pliku</string>
+</resources>
