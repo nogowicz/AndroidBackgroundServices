@@ -45,6 +45,11 @@ public class DownloadFile extends IntentService {
                 total += count;
                 output.write(data, 0, count);
                 Log.d("DownloadProgress", "Downloaded " + total + " / " + fileLength + " bytes");
+
+                Intent broadcastIntent = new Intent();
+                broadcastIntent.setAction("com.example.androidtlo.DOWNLOAD_STATUS");
+                broadcastIntent.putExtra("downloaded_bytes", total);
+                sendBroadcast(broadcastIntent);
             }
 
             output.flush();

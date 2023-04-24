@@ -4,7 +4,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -24,10 +27,31 @@ public class MainActivity extends AppCompatActivity {
     private Button getFileButton;
     private TextView downloadedBytesTextView;
 
+
+    private BroadcastReceiver downloadReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals("com.example.androidtlo.DOWNLOAD_STATUS")) {
+                int downloadedBytes = intent.getIntExtra("downloaded_bytes", 0);
+                downloadedBytesTextView.setText(String.valueOf(downloadedBytes));
+            }
+        }
+    };
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(downloadReceiver);
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("com.example.androidtlo.DOWNLOAD_STATUS");
+        registerReceiver(downloadReceiver, filter);
 
         addressTextField = (EditText) findViewById(R.id.addressTextField);
         getInfoButton = (Button) findViewById(R.id.getInfoButton);
