@@ -10,6 +10,9 @@ import android.app.TaskStackBuilder;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -32,6 +35,7 @@ public class DownloadFile extends IntentService {
     int total = 0;
     int fileLength;
     boolean czyPobieranieTrwa = true;
+    private Handler mHandler;
 
     public DownloadFile()
     {
@@ -40,6 +44,17 @@ public class DownloadFile extends IntentService {
     public static final int NOTIFICATION_ID = 1;
 
 
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        mHandler = new Handler(Looper.getMainLooper()) {
+            @Override
+            public void handleMessage(Message message) {
+                PostepInfo postepInfo = (PostepInfo) message.obj;
+                updateNotification(postepInfo);
+            }
+        };
+    }
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
         String url = intent.getStringExtra("url");
@@ -64,16 +79,29 @@ public class DownloadFile extends IntentService {
 
                 output.write(data, 0, count);
                 Log.d("DownloadProgress", "Downloaded " + total + " / " + fileLength + " bytes");
+
                 Intent broadcastIntent = new Intent();
                 broadcastIntent.setAction("com.example.androidtlo.DOWNLOAD_STATUS");
-                broadcastIntent.putExtra("downloaded_bytes", total);
+                PostepInfo postepInfo = new PostepInfo(total, fileLength, "Pobieranie w trakcie");
+                broadcastIntent.putExtra("postepInfo", postepInfo);
                 sendBroadcast(broadcastIntent);
+
             }
 
             output.flush();
             output.close();
             input.close();
             czyPobieranieTrwa = false;
+
+            PostepInfo postepInfo = new PostepInfo(total, fileLength, "Pobieranie zakończone");
+            Message message = mHandler.obtainMessage();
+            message.obj = postepInfo;
+            mHandler.sendMessage(message);
+            Intent broadcastIntent = new Intent();
+            broadcastIntent.setAction("com.example.androidtlo.DOWNLOAD_STATUS");
+            broadcastIntent.putExtra("downloaded_bytes", total);
+            sendBroadcast(broadcastIntent);
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -116,6 +144,24 @@ public class DownloadFile extends IntentService {
         return budowniczyPowiadomien.build();
     }
 
+    private void updateNotification(PostepInfo postepInfo) {
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, ID_KANALU)
+                .setContentTitle(getString(R.string.powiadomienie_tytul))
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setWhen(System.currentTimeMillis())
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setOnlyAlertOnce(true);
+
+        if(postepInfo.mStatus.equals("Pobieranie w trakcie")) {
+            builder.setProgress((int) postepInfo.mRozmiar, (int) postepInfo.mPobranychBajtow, false)
+                    .setContentText("Pobrano: " + postepInfo.mPobranychBajtow + " / " + postepInfo.mRozmiar + " bajtów");
+        } else {
+            builder.setProgress(0, 0, false)
+                    .setContentText("Pobieranie Zakończone");
+        }
+        Notification notification = builder.build();
+        mNotificationManager.notify(NOTIFICATION_ID, notification);
+    }
 
 }
 

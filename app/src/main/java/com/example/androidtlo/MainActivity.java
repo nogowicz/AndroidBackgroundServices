@@ -9,11 +9,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.os.Build;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.Manifest;
 
@@ -26,17 +27,24 @@ public class MainActivity extends AppCompatActivity {
     private TextView fileTypeTextView;
     private Button getFileButton;
     private TextView downloadedBytesTextView;
+    private ProgressBar progressBar;
+    private int downloadedBytes = 0;
 
 
     private BroadcastReceiver downloadReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals("com.example.androidtlo.DOWNLOAD_STATUS")) {
-                int downloadedBytes = intent.getIntExtra("downloaded_bytes", 0);
+                PostepInfo postepInfo = intent.getParcelableExtra("postepInfo");
+                int downloadedBytes = postepInfo.mPobranychBajtow;
                 downloadedBytesTextView.setText(String.valueOf(downloadedBytes));
+                updateProgressBar(postepInfo);
             }
         }
     };
+
+
+
 
     @Override
     protected void onDestroy() {
@@ -59,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
         fileTypeTextView = (TextView) findViewById(R.id.fileTypeTextView);
         getFileButton = (Button) findViewById(R.id.getFileButton);
         downloadedBytesTextView = (TextView) findViewById(R.id.downloadedBytesTextView);
-
+        progressBar = findViewById(R.id.progressBar);
 
         addressTextField.setText("https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.4.36.tar.xz");
         String url = addressTextField.getText().toString();
@@ -82,8 +90,10 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 downloadFile(url);
+                downloadedBytesTextView.setText(String.valueOf(downloadedBytes));
             }
         });
+
     }
 
     @Override
@@ -105,8 +115,13 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(this, DownloadFile.class);
         intent.putExtra("url", url);
         startService(intent);
+        progressBar.setMax(100);
+        progressBar.setProgress(0);
     }
 
-
+    private void updateProgressBar(PostepInfo postepInfo) {
+        int procent = (int) ((postepInfo.mPobranychBajtow * 100.0f) / postepInfo.mRozmiar);
+        progressBar.setProgress(procent);
+    }
 
 }
